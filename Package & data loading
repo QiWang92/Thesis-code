@@ -1,0 +1,47 @@
+# Loading packages
+# Packages
+library(dplyr)
+library(Seurat)
+library(ggplot2)
+library(cowplot)
+library(calibrate)
+library(EnhancedVolcano)
+library(ggrepel)
+library(sctransform)
+
+p5 <- DimPlot(hiPSC.combined, reduction = "umap", 
+              split.by = "orig.ident", label = TRUE, 
+              label.size = 5, ncol = 2)
+ggsave("iPSC 4OB UMAP.pdf",
+       plot = p5, # or give ggplot object name as in myPlot,
+       width = 12, height = 12,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+# png("iPSCUMAP5.png", width=3000, height = 866)
+# plot_grid(p5)
+# dev.off()
+# p5
+
+
+
+
+# set workplace
+setwd("P:/R/B2")
+
+# B1 Data
+B1.H9 <- readRDS("P:/R/Data/B1.H9.rds")
+B1.mutated <- readRDS("P:/R/Data/B1.mutated.rds")
+B1.Usher <- readRDS("P:/R/Data/B1.Usher.rds")
+B1.corrected <- readRDS("P:/R/Data/B1.corrected.rds")
+
+# B2 Data
+B2.H9 <- readRDS("P:/R/Data/B2.H9.rds")
+B2.mutated <- readRDS("P:/R/Data/B2.mutated.rds")
+B2.Usher <- readRDS("P:/R/Data/B2.Usher.rds")
+B2.corrected <- readRDS("P:/R/Data/B2.corrected.rds")
+
+# Merge Data
+Merge.H9 <- readRDS("P:/R/Data/Merge.H9.rds")
+Merge.mutated <- readRDS("P:/R/Data/Merge.mutated.rds")
+Merge.Usher <- readRDS("P:/R/Data/Merge.Usher.rds")
+Merge.corrected <- readRDS("P:/R/Data/Merge.corrected.rds")

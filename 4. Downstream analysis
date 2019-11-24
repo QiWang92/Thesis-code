@@ -1,0 +1,623 @@
+
+metadata<-hESC.integrated@meta.data
+Idents(hESC.integrated)<-"seurat_clusters"
+levels(hESC.integrated)
+# Save old identity classes (the cluster labels) for reference.
+
+celltype<- c("Rod", "Cone", "Rod", "Cone", "C4",
+             "Cone", "MU", "BC", "C8", "C9", "C10",
+             "AC", "MU", "MU", "Rod")
+
+names(celltype) <- levels(hESC.integrated)
+hESC.integrated <- RenameIdents(hESC.integrated, celltype)
+DimPlot(hESC.integrated, reduction = "umap", label = TRUE,label.size = 8, pt.size = 0.5) + NoLegend()
+
+celltype<- Idents(hESC.integrated)
+names(celltype) <- colnames(x = hESC.integrated)
+hESC.integrated <- AddMetaData(
+  object = hESC.integrated,
+  metadata = celltype,
+  col.name = 'celltype'
+)
+head(x = hESC.integrated[[]])
+table(hESC.integrated$celltype)
+
+setwd("P:/R/RDS")
+saveRDS(hESC.integrated,"SCThESC.rds")
+
+p<-DimPlot(hESC.integrated, reduction = "umap", label = TRUE,label.size = 6, pt.size = 0.5) + NoLegend()
+ggsave("hESC defined cells.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 8, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+
+# hESC.integrated <- AddMetaData(hESC.integrated, metadata=cell.labels)
+# hESC.integrated <- SetAllIdent(hESC.integrated, id='yourclusterlabels')
+
+
+setwd("P:/R/SCT")
+
+##### hESC cluster marker plot #####
+hESC.markers <- FindAllMarkers(hESC.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top10 <- hESC.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+p <- DoHeatmap(hESC.integrated, features = top10$gene) 
+# + NoLegend()
+# p <- Heatmap(hESC.integrated, features = top10$gene, keep.dendro = T) + NoLegend()
+ggsave("celltype hESC Top 10 gene.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 20,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+write.csv(top10,file="hESC celltype markers.csv",quote=T,col.names=T,row.names=T)
+
+
+
+DefaultAssay(hESC.integrated) <- "SCT"
+##### hESC  rod markers #####
+levels(hESC.integrated)
+Rod <- subset(hESC.integrated, idents = "Rod")
+  Idents(Rod) <- "mutated"
+  levels(Rod)
+  Rod.markers<- FindMarkers(Rod, ident.1 = "hESC H9" , ident.2 = "hESC mutated",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(Rod.markers,"hESC Rod DE markers.txt",quote=T,col.names=T,row.names=T)
+
+##### hESC  cone markers #####
+levels(hESC.integrated)
+Cone <- subset(hESC.integrated, idents = "Cone")
+Idents(Cone) <- "mutated"
+levels(Cone)
+Cone.markers<- FindMarkers(Cone, ident.1 = "hESC H9" , ident.2 = "hESC mutated",
+                            logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+write.table(Cone.markers,"hESC Cone DE markers.txt",quote=T,col.names=T,row.names=T)
+
+
+##### hESC PR markers #####
+levels(hESC.integrated)
+PR <- subset(hESC.integrated, idents = c("Rod","Cone"))
+Idents(PR) <- "mutated"
+levels(PR)
+PR.markers<- FindMarkers(PR, ident.1 = "hESC H9" , ident.2 = "hESC mutated",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+write.table(PR.markers,"hESC PR DE markers.txt",quote=T,col.names=T,row.names=T)
+
+
+
+setwd("P:/R/SCT")
+rod<-read.table("hESC Rod DE markers.txt", header = T)
+cone<-read.table("hESC Cone DE markers.txt", header = T)
+pr<-read.table("hESC PR DE markers.txt", header = T)
+
+############ ROD  ################
+
+p1<-EnhancedVolcano(rod,
+                    lab = rod$gene,
+                    x = 'avg_logFC',
+                    y = 'p_val_adj',
+                    xlim = c(-1.5, 1.5),
+                    title = 'Mutated vs H9',
+                    subtitle = 'hESC Rod DE marker',
+                    pCutoff = 10e-6,
+                    FCcutoff = 0.5,
+                    transcriptPointSize = 1.5,
+                    transcriptLabSize = 3.0,
+                    col=c('black', 'yellow', 'grey', 'red3'),
+                    colAlpha = 1,
+                    legend=c("NA", "NS", "Sig","Gene"),
+                    legendPosition = 'bottom',
+                    drawConnectors = TRUE,
+                    widthConnectors = 0.5,
+                    colConnectors = 'black',
+                    gridlines.major = FALSE,
+                    gridlines.minor = FALSE)
+p1
+ggsave("hESC Rod DE Plot o.5.pdf", 
+       plot = p1, # or give ggplot object name as in myPlot,
+       width = 7, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+
+
+############ CONE  ################
+p2<-EnhancedVolcano(cone,
+                    lab = cone$gene,
+                    x = 'avg_logFC',
+                    y = 'p_val_adj',
+                    xlim = c(-1.5, 1.5),
+                    title = 'Mutated vs H9',
+                    subtitle = 'hESC Cone DE marker',
+                    pCutoff = 10e-6,
+                    FCcutoff = 0.5,
+                    transcriptPointSize = 1.5,
+                    transcriptLabSize = 3.0,
+                    col=c('black', 'yellow', 'grey', 'red3'),
+                    colAlpha = 1,
+                    legend=c("NA", "NS", "Sig","Gene"),
+                    legendPosition = 'bottom',
+                    drawConnectors = TRUE,
+                    widthConnectors = 0.5,
+                    colConnectors = 'black',
+                    gridlines.major = FALSE,
+                    gridlines.minor = FALSE)
+p2
+ggsave("hESC Cone DE Plot o.5.pdf", 
+       plot = p2, # or give ggplot object name as in myPlot,
+       width = 7, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+
+############ PR  ################
+p3<-EnhancedVolcano(pr,
+                    lab = pr$gene,
+                    x = 'avg_logFC',
+                    y = 'p_val_adj',
+                    xlim = c(-1.5, 1.5),
+                    title = 'Mutated vs H9',
+                    subtitle = 'hESC Photoreceptor DE marker',
+                    pCutoff = 0.05,
+                    FCcutoff = 0.5,
+                    transcriptPointSize = 1.5,
+                    transcriptLabSize = 3.0,
+                    col=c('black', 'yellow', 'grey', 'red3'),
+                    colAlpha = 1,
+                    legend=c("NA", "NS", "Sig","Gene"),
+                    legendPosition = 'bottom',
+                    drawConnectors = TRUE,
+                    widthConnectors = 0.5,
+                    colConnectors = 'black',
+                    gridlines.major = FALSE,
+                    gridlines.minor = FALSE)
+p3
+ggsave("hESC PR DE Plot o.3.pdf", 
+       plot = p3, # or give ggplot object name as in myPlot,
+       width = 7, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+
+
+
+
+
+### Loading data
+
+setwd("P:/R/Figures")
+hiPSC.integrated <- readRDS("P:/R/SCT DE marker/SCThiPSC.rds")
+
+hiPSC
+table(hiPSC$orig.ident)  
+levels(hiPSC)
+options(future.globals.maxSize = 6000 * 1024^2)
+
+### SCTransform
+hiPSC.list <- SplitObject(hiPSC, split.by = "orig.ident")
+hiPSC.list <- hiPSC.list[c("B1iPSCMU", "B1iPSCWT", "B2iPSCMU", "B2iPSCWT")]
+
+for (i in 1:length(hiPSC.list)) {
+  hiPSC.list[[i]] <- SCTransform(hiPSC.list[[i]],vars.to.regress = "percent.mt", verbose = FALSE)
+}
+
+### Select features for downstream integration
+hiPSC.features <- SelectIntegrationFeatures(object.list = hiPSC.list, nfeatures = 3000)
+hiPSC.list <- PrepSCTIntegration(object.list = hiPSC.list, anchor.features = hiPSC.features,verbose = FALSE)
+
+### Normalization
+hiPSC.anchors <- FindIntegrationAnchors(object.list = hiPSC.list, normalization.method = "SCT", 
+                                        anchor.features = hiPSC.features, verbose = FALSE)
+hiPSC.integrated <- IntegrateData(anchorset = hiPSC.anchors, normalization.method = "SCT", 
+                                  verbose = FALSE)
+
+table(hiPSC.integrated)
+
+levels(hiPSC.integrated)
+
+
+### Visualization
+hiPSC.integrated <- RunPCA(hiPSC.integrated, verbose = FALSE)
+hiPSC.integrated <- RunUMAP(hiPSC.integrated, reduction="pca", dims = 1:30)
+
+
+plots <- DimPlot(hiPSC.integrated, group.by = c("orig.ident", "corrected"), combine = FALSE)
+plots <- lapply(X = plots, FUN = function(x) x + theme(legend.position = "top")  +theme(legend.text = element_text(size = 20)) + guides(color = guide_legend(nrow = 3, byrow = TRUE, override.aes = list(size = 6))))
+p<- CombinePlots(plots)
+p
+png("iPSCUMAP1.png", width=850, height = 450)
+plot_grid(p)
+dev.off()
+
+##### umap plots for groups #####
+p2 <- DimPlot(hiPSC.integrated, reduction = "umap", split.by = "orig.ident", label = FALSE, pt.size = 1,  ncol = 2)
+p2
+
+png("iPSCUMAP2.png", width=765, height = 543)
+plot_grid(p2)
+dev.off()
+ggsave("hiPSC 4OB UMAP.pdf",
+       plot = p2, # or give ggplot object name as in myPlot,
+       width = 12, height = 12,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+p3 <- DimPlot(hiPSC.integrated, reduction = "umap", split.by = "corrected", label = FALSE)
+png("iPSCUMAP3.png", width=1732, height = 866)
+plot_grid(p3)
+dev.off()
+ggsave("hiPSC group UMAP.pdf",
+       plot = p3, # or give ggplot object name as in myPlot,
+       width = 12, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+##########
+
+
+hiPSC.integrated <- FindNeighbors(hiPSC.integrated, dims = 1:30, verbose = FALSE)
+hiPSC.integrated <- FindClusters(hiPSC.integrated, verbose = FALSE)
+##### plots #####
+p<-DimPlot(hiPSC.integrated, label = TRUE, label.size = 8)+theme(legend.position = "right")+ guides(color = guide_legend(ncol = 1, bycol = TRUE, override.aes = list(size = 3))) + ggtitle("hiPSC origin") + theme(plot.title = element_text(hjust = 0.5, size = 20))
+p
+png("iPSCUMAP2.png", width=600, height = 500)
+plot_grid(p)
+dev.off()
+ggsave("hiPSC UMAP with cluster label.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 10,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+
+p2 <- DimPlot(hiPSC.integrated, reduction = "umap", split.by = "orig.ident", label = TRUE, label.size = 8,  ncol = 2)
+png("iPSCUMAP5.png", width=1732, height = 1732)
+plot_grid(p2)
+dev.off()
+ggsave("hiPSC 4OB UMAP with cluster.pdf",
+       plot = p2, # or give ggplot object name as in myPlot,
+       width = 12, height = 12,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+p3 <- DimPlot(hiPSC.integrated, reduction = "umap", split.by = "corrected", label = TRUE, label.size = 8)
+png("iPSCUMA.png", width=1732, height = 866)
+plot_grid(p3)
+dev.off()
+ggsave("hiPSC group UMAP with cluster.pdf",
+       plot = p3, # or give ggplot object name as in myPlot,
+       width = 12, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+#############################################
+
+##### hiPSC cluster marker plot #####
+# DefaultAssay(hiPSC.integrated) <- "SCT"
+hiPSC.markers <- FindAllMarkers(hiPSC.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top10 <- hiPSC.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+p <- DoHeatmap(hiPSC.integrated, features = top10$gene) 
+# + NoLegend()
+# p <- Heatmap(hiPSC.integrated, features = top10$gene, keep.dendro = T) + NoLegend()
+ggsave("Merge hiPSC Top 10 gene.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 20,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+write.csv(top10,file="hiPSC cluster markers.csv",quote=T,col.names=T,row.names=T)
+
+
+##### hiPSC DE #####
+levels(hiPSC.integrated)
+i<-c(c(levels(hiPSC.integrated)))
+cluster <- function(i) { 
+  DE <- subset(hiPSC.integrated, idents = i)
+  Idents(DE) <- "corrected"
+  levels(DE)
+  DE.markers<- FindMarkers(DE, ident.1 = "hiPSC corrected" , ident.2 = "hiPSC Usher",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(DE.markers,paste0("hiPSC cluster ",i," DE markers.txt"),quote=T,col.names=T,row.names=T)
+}
+for (ss in 0:50) {cluster(ss)}
+
+##### hiPSC SCT DE #####
+DefaultAssay(hiPSC.integrated) <- "SCT"
+levels(hiPSC.integrated)
+i<-c(c(levels(hiPSC.integrated)))
+cluster <- function(i) { 
+  DE <- subset(hiPSC.integrated, idents = i)
+  Idents(DE) <- "corrected"
+  levels(DE)
+  DE.markers<- FindMarkers(DE, ident.1 = "hiPSC corrected" , ident.2 = "hiPSC Usher",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(DE.markers,paste0("SCT hiPSC cluster ",i," DE markers.txt"),quote=T,col.names=T,row.names=T)
+}
+for (ss in 0:50) {cluster(ss)}
+
+##### hiPSC RNA DE #####
+DefaultAssay(hiPSC.integrated) <- "RNA"
+#hiPSC.integrated <- NormalizeData(hiPSC.integrated,verbose = FALSE)
+levels(hiPSC.integrated)
+i<-c(c(levels(hiPSC.integrated)))
+cluster <- function(i) { 
+  DE <- subset(hiPSC.integrated, idents = i)
+  Idents(DE) <- "corrected"
+  levels(DE)
+  DE.markers<- FindMarkers(DE, ident.1 = "hiPSC corrected" , ident.2 = "hiPSC Usher",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(DE.markers,paste0("RNA hiPSC cluster ",i," DE markers.txt"),quote=T,col.names=T,row.names=T)
+}
+for (ss in 0:50) {cluster(ss)}
+
+saveRDS(hiPSC,"min12cell4OBhiPSC")
+
+DefaultAssay(hiPSC.integrated) <- "SCT"
+hiPSC.markers <- FindAllMarkers(hiPSC.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top5 <- hiPSC.markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_logFC)
+p <- DoHeatmap(hiPSC.integrated, features = top5$gene) 
+# + NoLegend()
+# p <- Heatmap(hiPSC.integrated, features = top5$gene, keep.dendro = T) + NoLegend()
+ggsave("Merge hiPSC Top 5 gene.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 20,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+write.csv(top5,file="hiPSC top 5 cluster markers.csv",quote=T,col.names=T,row.names=T)
+
+################## RNA data normalization #######################
+DefaultAssay(hiPSC.integrated) <- "RNA"
+hiPSC.integrated <- NormalizeData(hiPSC.integrated,verbose = FALSE)
+levels(hiPSC.integrated)
+i<-c(c(levels(hiPSC.integrated)))
+cluster <- function(i) { 
+  DE <- subset(hiPSC.integrated, idents = i)
+  Idents(DE) <- "corrected"
+  levels(DE)
+  DE.markers<- FindMarkers(DE, ident.1 = "hiPSC corrected" , ident.2 = "hiPSC Usher",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(DE.markers,paste0("RNA normalized hiPSC cluster ",i," DE markers.txt"),quote=T,col.names=T,row.names=T)
+}
+for (ss in 0:50) {cluster(ss)}
+
+DefaultAssay(hiPSC.integrated) <- "SCT"
+hiPSC.markers <- FindAllMarkers(hiPSC.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top10 <- hiPSC.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+p <- DoHeatmap(hiPSC.integrated, features = top10$gene) 
+# + NoLegend()
+# p <- Heatmap(hiPSC.integrated, features = top5$gene, keep.dendro = T) + NoLegend()
+ggsave("hiPSC Top 10 gene.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 25,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+write.csv(top10,file="hiPSC top 10 cluster markers.csv",quote=T,col.names=T,row.names=T)
+
+
+metadata<-hiPSC.integrated@meta.data
+Idents(hiPSC.integrated)<-"seurat_clusters"
+levels(hiPSC.integrated)
+
+# Save old identity classes (the cluster labels) for reference.
+
+celltype<- c("BC", "Rod", "Cone", "RGC", "MU", "C5", "MU", "BC",
+             "MU", "MU", "RPE", "RGC", "MU", "C13", "MU", "BC", "BC",
+             "Rod", "Cone", "Mototic", "Mototic", "Cone", "RPE", "Rod")
+
+names(celltype) <- levels(hiPSC.integrated)
+hiPSC.integrated <- RenameIdents(hiPSC.integrated, celltype)
+DimPlot(hiPSC.integrated, reduction = "umap", label = TRUE,label.size = 8, pt.size = 0.5) + NoLegend()
+
+celltype<- Idents(hiPSC.integrated)
+names(celltype) <- colnames(x = hiPSC.integrated)
+hiPSC.integrated <- AddMetaData(
+  object = hiPSC.integrated,
+  metadata = celltype,
+  col.name = 'celltype'
+)
+head(x = hiPSC.integrated[[]])
+
+table(hiPSC.integrated$celltype)
+p<-DimPlot(hiPSC.integrated, reduction = "umap", label = TRUE,label.size = 6, pt.size = 0.5) + NoLegend() + ggtitle("hiPSC origin") + theme(plot.title = element_text(hjust = 0.5, size = 20))
+p
+png("iPSCUMAP3.png", width=600, height = 500)
+plot_grid(p)
+dev.off()
+ggsave("hiPSC defined cell.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 8, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+
+
+
+##### hiPSC cluster marker plot #####
+hiPSC.markers <- FindAllMarkers(hiPSC.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+
+
+top5 <- hiPSC.markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_logFC)
+p <- DoHeatmap(hiPSC.integrated, features = top5$gene) 
+p
+png("iPSCgene1.png", width=1200, height = 1000)
+plot_grid(p)
+dev.off()
+# + NoLegend()
+# p <- Heatmap(hiPSC.integrated, features = top10$gene, keep.dendro = T) + NoLegend()
+ggsave(" hiPSC Top 5 gene.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 25,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+write.csv(top5,file="hiPSC 5 cluster markers.csv",quote=T,col.names=T,row.names=T)
+
+
+setwd("P:/R/SCT")
+saveRDS(hiPSC.integrated, "SCThiPSC.rds")
+
+
+DefaultAssay(hiPSC.integrated) <- "SCT"
+##### hiPSC cluster marker plot #####
+hiPSC.markers <- FindAllMarkers(hiPSC.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top10 <- hiPSC.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+p <- DoHeatmap(hiPSC.integrated, features = top10$gene) 
+# + NoLegend()
+# p <- Heatmap(hiPSC.integrated, features = top10$gene, keep.dendro = T) + NoLegend()
+ggsave("celltype hiPSC Top 10 gene.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 20,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+write.csv(top10,file="hiPSC celltype markers.csv",quote=T,col.names=T,row.names=T)
+
+
+
+DefaultAssay(hiPSC.integrated) <- "SCT"
+##### hiPSC  rod markers #####
+levels(hiPSC.integrated)
+Rod <- subset(hiPSC.integrated, idents = "Rod")
+Idents(Rod) <- "corrected"
+levels(Rod)
+Rod.markers<- FindMarkers(Rod, ident.1 = "hiPSC corrected" , ident.2 = "hiPSC Usher",
+                          logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+write.table(Rod.markers,"hiPSC Rod DE markers.txt",quote=T,col.names=T,row.names=T)
+
+##### hiPSC  cone markers #####
+levels(hiPSC.integrated)
+Cone <- subset(hiPSC.integrated, idents = "Cone")
+Idents(Cone) <- "corrected"
+levels(Cone)
+Cone.markers<- FindMarkers(Cone, ident.1 = "hiPSC corrected" , ident.2 = "hiPSC Usher",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+write.table(Cone.markers,"hiPSC Cone DE markers.txt",quote=T,col.names=T,row.names=T)
+
+
+##### hiPSC PR markers #####
+levels(hiPSC.integrated)
+PR <- subset(hiPSC.integrated, idents = c("Rod","Cone"))
+Idents(PR) <- "corrected"
+levels(PR)
+PR.markers<- FindMarkers(PR, ident.1 = "hiPSC corrected" , ident.2 = "hiPSC Usher",
+                         logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+write.table(PR.markers,"hiPSC PR DE markers.txt",quote=T,col.names=T,row.names=T)
+
+rod<-read.table("hiPSC Rod DE markers.txt", header = T)
+
+##### hiPSC all markers #####
+
+levels(hiPSC.integrated)
+Idents(hiPSC.integrated) <- "corrected"
+levels(hiPSC.integrated)
+all.markers<- FindMarkers(hiPSC.integrated, ident.1 = "hiPSC corrected" , ident.2 = "hiPSC Usher",
+                          logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+write.table(all.markers,"hiPSC all DE markers.txt",quote=T,col.names=T,row.names=T)
+
+
+
+
+
+setwd("P:/R/RDS")
+saveRDS(hiPSC.integrated,"SCThiPSC.rds")
+
+
+setwd("P:/R/SCT")
+rod<-read.table("hiPSC Rod DE markers.txt", header = T)
+cone<-read.table("hiPSC Cone DE markers.txt", header = T)
+pr<-read.table("hiPSC PR DE markers.txt", header = T)
+
+############ ROD  ################
+
+p1<-EnhancedVolcano(rod,
+                   lab = rod$gene,
+                   x = 'avg_logFC',
+                   y = 'p_val_adj',
+                   xlim = c(-1.5, 1.5),
+                   title = 'Usher vs Corrected',
+                   subtitle = 'hiPSC Rod DE marker',
+                   pCutoff = 10e-6,
+                   FCcutoff = 0.3,
+                   transcriptPointSize = 1.5,
+                   transcriptLabSize = 3.0,
+                   col=c('black', 'yellow', 'grey', 'red3'),
+                   colAlpha = 1,
+                   legend=c("NA", "NS", "Sig","Gene"),
+                   legendPosition = 'bottom',
+                   drawConnectors = TRUE,
+                   widthConnectors = 0.5,
+                   colConnectors = 'black',
+                   gridlines.major = FALSE,
+                   gridlines.minor = FALSE)
+p1
+ggsave("hiPSC Rod DE Plot o.3.pdf", 
+       plot = p1, # or give ggplot object name as in myPlot,
+       width = 7, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+
+
+############ CONE  ################
+p2<-EnhancedVolcano(cone,
+                lab = cone$gene,
+                x = 'avg_logFC',
+                y = 'p_val_adj',
+                xlim = c(-1.5, 1.5),
+                title = 'Usher vs Corrected',
+                subtitle = 'hiPSC Cone DE marker',
+                pCutoff = 10e-6,
+                FCcutoff = 0.3,
+                transcriptPointSize = 1.5,
+                transcriptLabSize = 3.0,
+                col=c('black', 'yellow', 'grey', 'red3'),
+                colAlpha = 1,
+              legend=c("NA", "NS", "Sig","Gene"),
+              legendPosition = 'bottom',
+            drawConnectors = TRUE,
+            widthConnectors = 0.5,
+             colConnectors = 'black',
+              gridlines.major = FALSE,
+              gridlines.minor = FALSE)
+p2
+ggsave("hiPSC Cone DE Plot o.3.pdf", 
+              plot = p2, # or give ggplot object name as in myPlot,
+              width = 7, height = 6,
+              units = "in", # other options c("in", "cm", "mm"),
+              dpi = 300)
+
+############ PR  ################
+p3<-EnhancedVolcano(pr,
+                   lab = pr$gene,
+                   x = 'avg_logFC',
+                   y = 'p_val_adj',
+                   xlim = c(-1.5, 1.5),
+                   title = 'Usher vs Corrected',
+                   subtitle = 'hiPSC Photoreceptor DE marker',
+                   pCutoff = 10e-6,
+                   FCcutoff = 0.5,
+                   transcriptPointSize = 1.5,
+                   transcriptLabSize = 3.0,
+                   col=c('black', 'yellow', 'grey', 'red3'),
+                   colAlpha = 1,
+                   legend=c("NA", "NS", "Sig","Gene"),
+                   legendPosition = 'bottom',
+                   drawConnectors = TRUE,
+                   widthConnectors = 0.5,
+                   colConnectors = 'black',
+                   gridlines.major = FALSE,
+                   gridlines.minor = FALSE)
+p3
+ggsave("hiPSC PR DE Plot o.5.pdf", 
+       plot = p3, # or give ggplot object name as in myPlot,
+       width = 7, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+

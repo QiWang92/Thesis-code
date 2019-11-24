@@ -1,0 +1,408 @@
+### Loading data
+
+setwd("P:/R/Figures")
+levels(hESC)
+options(future.globals.maxSize = 6000 * 1024^2)
+
+### SCTransform
+hESC.list <- SplitObject(hESC, split.by = "orig.ident")
+hESC.list <- hESC.list[c("B1ESCMU", "B1ESCWT", "B2ESCMU", "B2ESCWT")]
+
+for (i in 1:length(hESC.list)) {
+  hESC.list[[i]] <- SCTransform(hESC.list[[i]],vars.to.regress = "percent.mt", verbose = FALSE)
+}
+
+### Select features for downstream integration
+hESC.features <- SelectIntegrationFeatures(object.list = hESC.list, nfeatures = 3000)
+hESC.list <- PrepSCTIntegration(object.list = hESC.list, anchor.features = hESC.features,verbose = FALSE)
+
+### Normalization
+hESC.anchors <- FindIntegrationAnchors(object.list = hESC.list, normalization.method = "SCT", 
+                                       anchor.features = hESC.features, verbose = FALSE)
+hESC.integrated <- IntegrateData(anchorset = hESC.anchors, normalization.method = "SCT", 
+                                 verbose = FALSE)
+
+
+levels(hESC.integrated)
+table(hESC.integrated$seurat_clusters)
+
+saveRDS(hESC.integrated,"SCThESC.rds")
+
+### Visualization
+hESC.integrated <- RunPCA(hESC.integrated, verbose = FALSE)
+hESC.integrated <- RunUMAP(hESC.integrated, dims = 1:30)
+
+plots <- DimPlot(hESC.integrated, group.by = c("orig.ident", "mutated"), combine = FALSE)
+plots <- lapply(X = plots, FUN = function(x) x + theme(legend.position = "top")  +theme(legend.text = element_text(size = 20)) + guides(color = guide_legend(nrow = 3, byrow = TRUE, override.aes = list(size = 6))))
+p<- CombinePlots(plots)
+p
+png("ESCUMAP1.png", width=1700, height = 900)
+plot_grid(p)
+dev.off()
+
+##### umap plots for groups #####
+p2 <- DimPlot(hESC.integrated, reduction = "umap", split.by = "orig.ident", label = FALSE,  ncol = 2)
+png("ESCUMAP2.png", width=1732, height = 1732)
+plot_grid(p2)
+dev.off()
+ggsave("hESC 4OB UMAP.pdf",
+       plot = p2, # or give ggplot object name as in myPlot,
+       width = 12, height = 12,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+p3 <- DimPlot(hESC.integrated, reduction = "umap", split.by = "mutated", label = FALSE)
+png("ESCUMA3.png", width=1732, height = 866)
+plot_grid(p3)
+dev.off()
+ggsave("hESC group UMAP.pdf",
+       plot = p3, # or give ggplot object name as in myPlot,
+       width = 12, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+##########
+
+
+hESC.integrated <- FindNeighbors(hESC.integrated, dims = 1:30, verbose = FALSE)
+hESC.integrated <- FindClusters(hESC.integrated, verbose = FALSE)
+##### plots #####
+p<-DimPlot(hESC.integrated, label = TRUE, label.size = 6)
+png("ESCUMAP4.png", width=866, height = 866)
+plot_grid(p)
+dev.off()
+p2 <- DimPlot(hESC.integrated, reduction = "umap", split.by = "orig.ident", label = TRUE,  ncol = 2)
+png("ESCUMAP5.png", width=1732, height = 1732)
+plot_grid(p2)
+dev.off()
+ggsave("hESC 4OB UMAP with cluster.pdf",
+       plot = p2, # or give ggplot object name as in myPlot,
+       width = 12, height = 12,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+p3 <- DimPlot(hESC.integrated, reduction = "umap", split.by = "mutated", label = TRUE)
+png("ESCUMAP6.png", width=1732, height = 866)
+plot_grid(p3)
+dev.off()
+ggsave("hESC group UMAP with cluster.pdf",
+       plot = p3, # or give ggplot object name as in myPlot,
+       width = 12, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+
+p4 <- DimPlot(hESC.integrated, reduction = "umap", split.by = "cluster", label = TRUE)
+png("ESCUMAP7.png", width=1732, height = 866)
+plot_grid(p4)
+dev.off()
+ggsave("hESC group UMAP with cluster label.pdf",
+       plot = p4, # or give ggplot object name as in myPlot,
+       width = 12, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+#############################################
+
+##### hESC cluster marker plot #####
+hESC.markers <- FindAllMarkers(hESC.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top10 <- hESC.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+p <- DoHeatmap(hESC.integrated, features = top10$gene) 
+# + NoLegend()
+# p <- Heatmap(hESC.integrated, features = top10$gene, keep.dendro = T) + NoLegend()
+ggsave("Merge hESC Top 10 gene.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 20,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+write.csv(top10,file="hESC cluster markers.csv",quote=T,col.names=T,row.names=T)
+
+##### Distinguishing cluster to others #####
+# find all markers distinguishing cluster 5 from clusters 0 and 3
+# cluster2.markers <- FindMarkers(hESC.integrated, ident.1 = 2, ident.2 = 1, min.pct = 0.25)
+# head(cluster2.markers, n = 5)
+
+
+##### hESC  DE #####
+levels(hESC.integrated)
+i<-c(c(levels(hESC.integrated)))
+cluster <- function(i) { 
+  DE <- subset(hESC.integrated, idents = i)
+  Idents(DE) <- "mutated"
+  levels(DE)
+  DE.markers<- FindMarkers(DE, ident.1 = "hESC H9" , ident.2 = "hESC mutated",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(DE.markers,paste0("hESC cluster ",i," DE markers.txt"),quote=T,col.names=T,row.names=T)
+}
+for (ss in 0:30) {cluster(ss)}
+
+##### hESC SCT DE #####
+DefaultAssay(hESC.integrated) <- "SCT"
+levels(hESC.integrated)
+i<-c(c(levels(hESC.integrated)))
+cluster <- function(i) { 
+  DE <- subset(hESC.integrated, idents = i)
+  Idents(DE) <- "mutated"
+  levels(DE)
+  DE.markers<- FindMarkers(DE, ident.1 = "hESC H9" , ident.2 = "hESC mutated",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(DE.markers,paste0("SCT hESC cluster ",i," DE markers.txt"),quote=T,col.names=T,row.names=T)
+}
+for (ss in 0:30) {cluster(ss)}
+
+##### hESC RNA DE #####
+DefaultAssay(hESC.integrated) <- "RNA"
+levels(hESC.integrated)
+i<-c(c(levels(hESC.integrated)))
+cluster <- function(i) { 
+  DE <- subset(hESC.integrated, idents = i)
+  Idents(DE) <- "mutated"
+  levels(DE)
+  DE.markers<- FindMarkers(DE, ident.1 = "hESC H9" , ident.2 = "hESC mutated",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(DE.markers,paste0("RNA hESC cluster ",i," DE markers.txt"),quote=T,col.names=T,row.names=T)
+}
+for (ss in 0:30) {cluster(ss)}
+
+
+
+DefaultAssay(hESC.integrated) <- "SCT"
+hESC.markers <- FindAllMarkers(hESC.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top5 <- hESC.markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_logFC)
+p <- DoHeatmap(hESC.integrated, features = top5$gene) 
+# + NoLegend()
+# p <- Heatmap(hESC.integrated, features = top10$gene, keep.dendro = T) + NoLegend()
+ggsave("Merge hESC Top 5 gene.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 20,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+write.csv(top5,file="hESC top 5 cluster markers.csv",quote=T,col.names=T,row.names=T)
+
+saveRDS(hESC,"min12cells4OBhESC.rds")
+
+
+################### RNA data normalization ################
+DefaultAssay(hESC.integrated) <- "RNA"
+hESC<-NormalizeData(hESC.integrated,verbose = FALSE)
+levels(hESC.integrated)
+i<-c(c(levels(hESC.integrated)))
+cluster <- function(i) { 
+  DE <- subset(hESC.integrated, idents = i)
+  Idents(DE) <- "mutated"
+  levels(DE)
+  DE.markers<- FindMarkers(DE, ident.1 = "hESC H9" , ident.2 = "hESC mutated",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(DE.markers,paste0("RNA normalized hESC cluster ",i," DE markers.txt"),quote=T,col.names=T,row.names=T)
+}
+for (ss in 0:30) {cluster(ss)}
+
+
+
+
+### Loading data
+
+setwd("P:/R/Figures")
+hiPSC.integrated <- readRDS("P:/R/SCT DE marker/SCThiPSC.rds")
+
+hiPSC
+table(hiPSC$orig.ident)  
+levels(hiPSC)
+options(future.globals.maxSize = 6000 * 1024^2)
+
+### SCTransform
+hiPSC.list <- SplitObject(hiPSC, split.by = "orig.ident")
+hiPSC.list <- hiPSC.list[c("B1iPSCMU", "B1iPSCWT", "B2iPSCMU", "B2iPSCWT")]
+
+for (i in 1:length(hiPSC.list)) {
+  hiPSC.list[[i]] <- SCTransform(hiPSC.list[[i]],vars.to.regress = "percent.mt", verbose = FALSE)
+}
+
+### Select features for downstream integration
+hiPSC.features <- SelectIntegrationFeatures(object.list = hiPSC.list, nfeatures = 3000)
+hiPSC.list <- PrepSCTIntegration(object.list = hiPSC.list, anchor.features = hiPSC.features,verbose = FALSE)
+
+### Normalization
+hiPSC.anchors <- FindIntegrationAnchors(object.list = hiPSC.list, normalization.method = "SCT", 
+                                        anchor.features = hiPSC.features, verbose = FALSE)
+hiPSC.integrated <- IntegrateData(anchorset = hiPSC.anchors, normalization.method = "SCT", 
+                                  verbose = FALSE)
+
+table(hiPSC.integrated)
+
+levels(hiPSC.integrated)
+
+
+### Visualization
+hiPSC.integrated <- RunPCA(hiPSC.integrated, verbose = FALSE)
+hiPSC.integrated <- RunUMAP(hiPSC.integrated, reduction="pca", dims = 1:30)
+
+
+plots <- DimPlot(hiPSC.integrated, group.by = c("orig.ident", "corrected"), combine = FALSE)
+plots <- lapply(X = plots, FUN = function(x) x + theme(legend.position = "top")  +theme(legend.text = element_text(size = 20)) + guides(color = guide_legend(nrow = 3, byrow = TRUE, override.aes = list(size = 6))))
+p<- CombinePlots(plots)
+p
+png("iPSCUMAP1.png", width=850, height = 450)
+plot_grid(p)
+dev.off()
+
+##### umap plots for groups #####
+p2 <- DimPlot(hiPSC.integrated, reduction = "umap", split.by = "orig.ident", label = FALSE, pt.size = 1,  ncol = 2)
+p2
+
+png("iPSCUMAP2.png", width=765, height = 543)
+plot_grid(p2)
+dev.off()
+ggsave("hiPSC 4OB UMAP.pdf",
+       plot = p2, # or give ggplot object name as in myPlot,
+       width = 12, height = 12,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+p3 <- DimPlot(hiPSC.integrated, reduction = "umap", split.by = "corrected", label = FALSE)
+png("iPSCUMAP3.png", width=1732, height = 866)
+plot_grid(p3)
+dev.off()
+ggsave("hiPSC group UMAP.pdf",
+       plot = p3, # or give ggplot object name as in myPlot,
+       width = 12, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+##########
+
+
+hiPSC.integrated <- FindNeighbors(hiPSC.integrated, dims = 1:30, verbose = FALSE)
+hiPSC.integrated <- FindClusters(hiPSC.integrated, verbose = FALSE)
+##### plots #####
+p<-DimPlot(hiPSC.integrated, label = TRUE, label.size = 8)+theme(legend.position = "right")+ guides(color = guide_legend(ncol = 1, bycol = TRUE, override.aes = list(size = 3))) + ggtitle("hiPSC origin") + theme(plot.title = element_text(hjust = 0.5, size = 20))
+p
+png("iPSCUMAP2.png", width=600, height = 500)
+plot_grid(p)
+dev.off()
+ggsave("hiPSC UMAP with cluster label.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 10,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+
+p2 <- DimPlot(hiPSC.integrated, reduction = "umap", split.by = "orig.ident", label = TRUE, label.size = 8,  ncol = 2)
+png("iPSCUMAP5.png", width=1732, height = 1732)
+plot_grid(p2)
+dev.off()
+ggsave("hiPSC 4OB UMAP with cluster.pdf",
+       plot = p2, # or give ggplot object name as in myPlot,
+       width = 12, height = 12,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+p3 <- DimPlot(hiPSC.integrated, reduction = "umap", split.by = "corrected", label = TRUE, label.size = 8)
+png("iPSCUMA.png", width=1732, height = 866)
+plot_grid(p3)
+dev.off()
+ggsave("hiPSC group UMAP with cluster.pdf",
+       plot = p3, # or give ggplot object name as in myPlot,
+       width = 12, height = 6,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+#############################################
+
+##### hiPSC cluster marker plot #####
+# DefaultAssay(hiPSC.integrated) <- "SCT"
+hiPSC.markers <- FindAllMarkers(hiPSC.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top10 <- hiPSC.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+p <- DoHeatmap(hiPSC.integrated, features = top10$gene) 
+# + NoLegend()
+# p <- Heatmap(hiPSC.integrated, features = top10$gene, keep.dendro = T) + NoLegend()
+ggsave("Merge hiPSC Top 10 gene.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 20,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+write.csv(top10,file="hiPSC cluster markers.csv",quote=T,col.names=T,row.names=T)
+
+
+##### hiPSC DE #####
+levels(hiPSC.integrated)
+i<-c(c(levels(hiPSC.integrated)))
+cluster <- function(i) { 
+  DE <- subset(hiPSC.integrated, idents = i)
+  Idents(DE) <- "corrected"
+  levels(DE)
+  DE.markers<- FindMarkers(DE, ident.1 = "hiPSC corrected" , ident.2 = "hiPSC Usher",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(DE.markers,paste0("hiPSC cluster ",i," DE markers.txt"),quote=T,col.names=T,row.names=T)
+}
+for (ss in 0:50) {cluster(ss)}
+
+##### hiPSC SCT DE #####
+DefaultAssay(hiPSC.integrated) <- "SCT"
+levels(hiPSC.integrated)
+i<-c(c(levels(hiPSC.integrated)))
+cluster <- function(i) { 
+  DE <- subset(hiPSC.integrated, idents = i)
+  Idents(DE) <- "corrected"
+  levels(DE)
+  DE.markers<- FindMarkers(DE, ident.1 = "hiPSC corrected" , ident.2 = "hiPSC Usher",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(DE.markers,paste0("SCT hiPSC cluster ",i," DE markers.txt"),quote=T,col.names=T,row.names=T)
+}
+for (ss in 0:50) {cluster(ss)}
+
+##### hiPSC RNA DE #####
+DefaultAssay(hiPSC.integrated) <- "RNA"
+#hiPSC.integrated <- NormalizeData(hiPSC.integrated,verbose = FALSE)
+levels(hiPSC.integrated)
+i<-c(c(levels(hiPSC.integrated)))
+cluster <- function(i) { 
+  DE <- subset(hiPSC.integrated, idents = i)
+  Idents(DE) <- "corrected"
+  levels(DE)
+  DE.markers<- FindMarkers(DE, ident.1 = "hiPSC corrected" , ident.2 = "hiPSC Usher",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(DE.markers,paste0("RNA hiPSC cluster ",i," DE markers.txt"),quote=T,col.names=T,row.names=T)
+}
+for (ss in 0:50) {cluster(ss)}
+
+saveRDS(hiPSC,"min12cell4OBhiPSC")
+
+DefaultAssay(hiPSC.integrated) <- "SCT"
+hiPSC.markers <- FindAllMarkers(hiPSC.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top5 <- hiPSC.markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_logFC)
+p <- DoHeatmap(hiPSC.integrated, features = top5$gene) 
+# + NoLegend()
+# p <- Heatmap(hiPSC.integrated, features = top5$gene, keep.dendro = T) + NoLegend()
+ggsave("Merge hiPSC Top 5 gene.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 20,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+write.csv(top5,file="hiPSC top 5 cluster markers.csv",quote=T,col.names=T,row.names=T)
+
+################## RNA data normalization #######################
+DefaultAssay(hiPSC.integrated) <- "RNA"
+hiPSC.integrated <- NormalizeData(hiPSC.integrated,verbose = FALSE)
+levels(hiPSC.integrated)
+i<-c(c(levels(hiPSC.integrated)))
+cluster <- function(i) { 
+  DE <- subset(hiPSC.integrated, idents = i)
+  Idents(DE) <- "corrected"
+  levels(DE)
+  DE.markers<- FindMarkers(DE, ident.1 = "hiPSC corrected" , ident.2 = "hiPSC Usher",
+                           logfc.threshold = -Inf, min.pct = -Inf, min.diff.pct = -Inf)
+  write.table(DE.markers,paste0("RNA normalized hiPSC cluster ",i," DE markers.txt"),quote=T,col.names=T,row.names=T)
+}
+for (ss in 0:50) {cluster(ss)}
+
+DefaultAssay(hiPSC.integrated) <- "SCT"
+hiPSC.markers <- FindAllMarkers(hiPSC.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top10 <- hiPSC.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+p <- DoHeatmap(hiPSC.integrated, features = top10$gene) 
+# + NoLegend()
+# p <- Heatmap(hiPSC.integrated, features = top5$gene, keep.dendro = T) + NoLegend()
+ggsave("hiPSC Top 10 gene.pdf",
+       plot = p, # or give ggplot object name as in myPlot,
+       width = 12, height = 25,
+       units = "in", # other options c("in", "cm", "mm"),
+       dpi = 300)
+write.csv(top10,file="hiPSC top 10 cluster markers.csv",quote=T,col.names=T,row.names=T)
+
+
+
+
+
+
+
+

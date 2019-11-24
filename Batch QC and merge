@@ -1,0 +1,445 @@
+
+# set workplace
+setwd("P:/R/Raw data/min3cell data")
+B1.H9 <- readRDS("B1.H9.rds")
+B1.H9
+table(B1.H9$orig.ident)
+# The [[ operator can add columns to object metadata. This is a great place to stash QC stats
+B1.H9[["percent.mt"]] <- PercentageFeatureSet(B1.H9, pattern = "^MT-")
+B1.H9[["percent.rb"]] <- PercentageFeatureSet(B1.H9, pattern = "^RP[SL]")
+# Get the data frame with the QC information
+metadata <- B1.H9@meta.data
+
+umi_threshold1 <- 200
+umi_threshold2 <-50000
+umi_counts <- ggplot(metadata, aes(nCount_RNA)) + geom_histogram(binwidth = 500) + theme_classic() + geom_vline(xintercept = umi_threshold1, color = "red")+ geom_vline(xintercept = umi_threshold2, color = "red")
+umi_counts
+
+feature_threshold1 <- 200
+feature_threshold2 <- 6000
+feature_counts <- ggplot(metadata, aes(nFeature_RNA)) + geom_histogram(binwidth = 50) + theme_classic() + geom_vline(xintercept = feature_threshold1, color = "red") + geom_vline(xintercept = feature_threshold2, color = "red")
+feature_counts
+
+mt_threshold <- 17
+mt_pct <-  ggplot(metadata, aes(percent.mt)) + geom_histogram() + theme_classic() + geom_vline(xintercept = mt_threshold, color = "red")
+mt_pct
+
+rb_threshold <- 60
+rb_pct <-  ggplot(metadata, aes(percent.rb)) + geom_histogram() + theme_classic() + geom_vline(xintercept = rb_threshold, color = "red")
+rb_pct
+plot1 <- FeatureScatter(B1.H9, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot1
+plot2 <- FeatureScatter(B1.H9, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot2
+
+# Filtering
+filtered_B1H9 <- subset(B1.H9, nCount_RNA > umi_threshold1 & nCount_RNA < umi_threshold2
+                           & nFeature_RNA > feature_threshold1 & nFeature_RNA < feature_threshold2 &
+                             percent.mt < mt_threshold & percent.rb < rb_threshold)
+table(filtered_B1H9$orig.ident)
+filtered_B1H9
+
+setwd("P:/R/Data")
+saveRDS(filtered_B1H9, "B1.H9.rds")
+
+
+
+B1.H9 <- readRDS("B1.H9.rds")
+
+# set workplace
+setwd("P:/R/Raw data/min3cell data")
+B2.H9 <- readRDS("B2.H9.rds")
+B2.H9
+table(B2.H9$orig.ident)
+# The [[ operator can add columns to object metadata. This is a great place to stash QC stats
+B2.H9[["percent.mt"]] <- PercentageFeatureSet(B2.H9, pattern = "^MT-")
+B2.H9[["percent.rb"]] <- PercentageFeatureSet(B2.H9, pattern = "^RP[SL]")
+# Get the data frame with the QC information
+metadata <- B2.H9@meta.data
+
+umi_threshold1 <- 200
+umi_threshold2 <- 50000
+umi_counts <- ggplot(metadata, aes(nCount_RNA)) + geom_histogram(binwidth = 500) + theme_classic() + geom_vline(xintercept = umi_threshold1, color = "red")+ geom_vline(xintercept = umi_threshold2, color = "red")
+umi_counts
+
+feature_threshold1 <- 200
+feature_threshold2 <- 8000
+feature_counts <- ggplot(metadata, aes(nFeature_RNA)) + geom_histogram(binwidth = 50) + theme_classic() + geom_vline(xintercept = feature_threshold1, color = "red") + geom_vline(xintercept = feature_threshold2, color = "red")
+feature_counts
+
+mt_threshold <- 40
+mt_pct <-  ggplot(metadata, aes(percent.mt)) + geom_histogram() + theme_classic() + geom_vline(xintercept = mt_threshold, color = "red")
+mt_pct
+
+rb_threshold <- 50
+rb_pct <-  ggplot(metadata, aes(percent.rb)) + geom_histogram() + theme_classic() + geom_vline(xintercept = rb_threshold, color = "red")
+rb_pct
+
+plot1 <- FeatureScatter(B2.H9, feature1 = "nCount_RNA", feature2 = "percent.mt") 
+plot1
+plot2 <- FeatureScatter(filtered_B2H9, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot2
+
+# Filtering
+filtered_B2H9 <- subset(B2.H9, nCount_RNA > umi_threshold1 & nCount_RNA < umi_threshold2
+                        & nFeature_RNA > feature_threshold1 & nFeature_RNA < feature_threshold2 &
+                          percent.mt < mt_threshold & percent.rb < rb_threshold)
+table(filtered_B2H9$orig.ident)
+filtered_B2H9
+setwd("P:/R/Data")
+saveRDS(filtered_B2H9, "B2.H9.rds")
+
+
+B2.H9 <- readRDS("B2.H9.rds")
+
+# set workplace
+setwd("P:/R/Raw data/min3cell data")
+B1.mutated <- readRDS("B1.mutated.rds")
+B1.mutated
+table(B1.mutated$orig.ident)
+# The [[ operator can add columns to object metadata. This is a great place to stash QC stats
+B1.mutated[["percent.mt"]] <- PercentageFeatureSet(B1.mutated, pattern = "^MT-")
+B1.mutated[["percent.rb"]] <- PercentageFeatureSet(B1.mutated, pattern = "^RP[SL]")
+# Get the data frame with the QC information
+metadata <- B1.mutated@meta.data
+
+umi_threshold1 <- 200
+umi_threshold2 <- 50000
+umi_counts <- ggplot(metadata, aes(nCount_RNA)) + geom_histogram(binwidth = 500) + theme_classic() + geom_vline(xintercept = umi_threshold1, color = "red")+ geom_vline(xintercept = umi_threshold2, color = "red")
+umi_counts
+
+feature_threshold1 <- 200
+feature_threshold2 <- 4000
+feature_counts <- ggplot(metadata, aes(nFeature_RNA)) + geom_histogram(binwidth = 50) + theme_classic() + geom_vline(xintercept = feature_threshold1, color = "red") + geom_vline(xintercept = feature_threshold2, color = "red")
+feature_counts
+
+mt_threshold <- 20
+mt_pct <-  ggplot(metadata, aes(percent.mt)) + geom_histogram() + theme_classic() + geom_vline(xintercept = mt_threshold, color = "red")
+mt_pct
+
+rb_threshold <- 55
+rb_pct <-  ggplot(metadata, aes(percent.rb)) + geom_histogram() + theme_classic() + geom_vline(xintercept = rb_threshold, color = "red")
+rb_pct
+
+plot1 <- FeatureScatter(filtered_B1mutated, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot1
+plot2 <- FeatureScatter(filtered_B1mutated, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot2
+# Filtering
+filtered_B1mutated <- subset(B1.mutated, nCount_RNA > umi_threshold1 & nCount_RNA < umi_threshold2
+                        & nFeature_RNA > feature_threshold1 & nFeature_RNA < feature_threshold2 &
+                          percent.mt < mt_threshold & percent.rb < rb_threshold)
+table(filtered_B1mutated$orig.ident)
+filtered_B1mutated
+
+setwd("P:/R/Data")
+saveRDS(filtered_B1mutated, "B1.mutated.rds")
+
+
+B1.mutated <- readRDS("B1.mutated.rds")
+
+# set workplace
+setwd("P:/R/Raw data/min3cell data")
+B2.mutated <- readRDS("B2.mutated.rds")
+B2.mutated
+table(B2.mutated$orig.ident)
+# The [[ operator can add columns to object metadata. This is a great place to stash QC stats
+B2.mutated[["percent.mt"]] <- PercentageFeatureSet(B2.mutated, pattern = "^MT-")
+B2.mutated[["percent.rb"]] <- PercentageFeatureSet(B2.mutated, pattern = "^RP[SL]")
+# Get the data frame with the QC information
+metadata <- B2.mutated@meta.data
+
+umi_threshold1 <- 200
+umi_threshold2 <- 50000
+umi_counts <- ggplot(metadata, aes(nCount_RNA)) + geom_histogram(binwidth = 500) + theme_classic() + geom_vline(xintercept = umi_threshold1, color = "red")+ geom_vline(xintercept = umi_threshold2, color = "red")
+umi_counts
+
+feature_threshold1 <- 200
+feature_threshold2 <- 6000
+feature_counts <- ggplot(metadata, aes(nFeature_RNA)) + geom_histogram(binwidth = 50) + theme_classic() + geom_vline(xintercept = feature_threshold1, color = "red") + geom_vline(xintercept = feature_threshold2, color = "red")
+feature_counts
+
+mt_threshold <- 40
+mt_pct <-  ggplot(metadata, aes(percent.mt)) + geom_histogram() + theme_classic() + geom_vline(xintercept = mt_threshold, color = "red")
+mt_pct
+
+rb_threshold <- 50
+rb_pct <-  ggplot(metadata, aes(percent.rb)) + geom_histogram() + theme_classic() + geom_vline(xintercept = rb_threshold, color = "red")
+rb_pct
+plot1 <- FeatureScatter(B2.mutated, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot1
+plot2 <- FeatureScatter(filtered_B2mutated, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot2
+# Filtering
+filtered_B2mutated <- subset(B2.mutated, nCount_RNA > umi_threshold1 & nCount_RNA < umi_threshold2
+                             & nFeature_RNA > feature_threshold1 & nFeature_RNA < feature_threshold2 &
+                               percent.mt < mt_threshold & percent.rb < rb_threshold)
+
+table(filtered_B2mutated$orig.ident)
+metadata <- filtered_B2mutated@meta.data
+setwd("P:/R/Data")
+saveRDS(filtered_B2mutated, "B2.mutated.rds")
+
+
+B2.mutated <- readRDS("B2.mutated.rds")
+
+# set workplace
+setwd("P:/R/Raw data/min3cell data")
+B1.Usher <- readRDS("B1.Usher.rds")
+B1.Usher
+table(B1.Usher$orig.ident)
+# The [[ operator can add columns to object metadata. This is a great place to stash QC stats
+B1.Usher[["percent.mt"]] <- PercentageFeatureSet(B1.Usher, pattern = "^MT-")
+B1.Usher[["percent.rb"]] <- PercentageFeatureSet(B1.Usher, pattern = "^RP[SL]")
+# Get the data frame with the QC information
+metadata <- B1.Usher@meta.data
+
+umi_threshold1 <- 200
+umi_threshold2 <- 25000
+umi_counts <- ggplot(metadata, aes(nCount_RNA)) + geom_histogram(binwidth = 500) + theme_classic() + geom_vline(xintercept = umi_threshold1, color = "red")+ geom_vline(xintercept = umi_threshold2, color = "red")
+umi_counts
+
+feature_threshold1 <- 200
+feature_threshold2 <- 6250
+feature_counts <- ggplot(metadata, aes(nFeature_RNA)) + geom_histogram(binwidth = 50) + theme_classic() + geom_vline(xintercept = feature_threshold1, color = "red") + geom_vline(xintercept = feature_threshold2, color = "red")
+feature_counts
+
+mt_threshold <- 18
+mt_pct <-  ggplot(metadata, aes(percent.mt)) + geom_histogram() + theme_classic() + geom_vline(xintercept = mt_threshold, color = "red")
+mt_pct
+
+rb_threshold <- 45
+rb_pct <-  ggplot(metadata, aes(percent.rb)) + geom_histogram() + theme_classic() + geom_vline(xintercept = rb_threshold, color = "red")
+rb_pct
+
+plot1 <- FeatureScatter(B1.Usher, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot1
+plot2 <- FeatureScatter(B1.Usher, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot2
+# Filtering
+filtered_B1Usher <- subset(B1.Usher, nCount_RNA > umi_threshold1 & nCount_RNA < umi_threshold2
+                           & nFeature_RNA > feature_threshold1 & nFeature_RNA < feature_threshold2 &
+                             percent.mt < mt_threshold & percent.rb < rb_threshold)
+table(filtered_B1Usher$orig.ident)
+
+setwd("P:/R/Data")
+saveRDS(filtered_B1Usher, "B1.Usher.rds")
+
+
+B1.Usher <- readRDS("B1.Usher.rds")
+
+# set workplace
+setwd("P:/R/Raw data/min3cell data")
+B2.Usher <- readRDS("B2.Usher.rds")
+B2.Usher
+table(B2.Usher$orig.ident)
+# The [[ operator can add columns to object metadata. This is a great place to stash QC stats
+B2.Usher[["percent.mt"]] <- PercentageFeatureSet(B2.Usher, pattern = "^MT-")
+B2.Usher[["percent.rb"]] <- PercentageFeatureSet(B2.Usher, pattern = "^RP[SL]")
+# Get the data frame with the QC information
+metadata <- B2.Usher@meta.data
+
+umi_threshold1 <- 500
+umi_threshold2 <- 50000
+umi_counts <- ggplot(metadata, aes(nCount_RNA)) + geom_histogram(binwidth = 500) + theme_classic() + geom_vline(xintercept = umi_threshold1, color = "red")+ geom_vline(xintercept = umi_threshold2, color = "red")
+umi_counts
+
+feature_threshold1 <- 200
+feature_threshold2 <- 6000
+feature_counts <- ggplot(metadata, aes(nFeature_RNA)) + geom_histogram(binwidth = 50) + theme_classic() + geom_vline(xintercept = feature_threshold1, color = "red") + geom_vline(xintercept = feature_threshold2, color = "red")
+feature_counts
+
+mt_threshold <- 40
+mt_pct <-  ggplot(metadata, aes(percent.mt)) + geom_histogram() + theme_classic() + geom_vline(xintercept = mt_threshold, color = "red")
+mt_pct
+
+rb_threshold <- 65
+rb_pct <-  ggplot(metadata, aes(percent.rb)) + geom_histogram() + theme_classic() + geom_vline(xintercept = rb_threshold, color = "red")
+rb_pct
+
+plot1 <- FeatureScatter(filtered_B2Usher, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot1
+plot2 <- FeatureScatter(filtered_B2Usher, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot2
+
+# Filtering
+filtered_B2Usher <- subset(B2.Usher, nCount_RNA > umi_threshold1 & nCount_RNA < umi_threshold2
+                           & nFeature_RNA > feature_threshold1 & nFeature_RNA < feature_threshold2 &
+                             percent.mt < mt_threshold & percent.rb < rb_threshold)
+table(filtered_B2Usher$orig.ident)
+
+setwd("P:/R/Data")
+saveRDS(filtered_B2Usher, "B2.Usher.rds")
+
+
+B2.Usher <- readRDS("B2.Usher.rds")
+
+# set workplace
+setwd("P:/R/Raw data/min3cell data")
+B1.corrected <- readRDS("B1.corrected.rds")
+B1.corrected
+table(B1.corrected$orig.ident)
+# The [[ operator can add columns to object metadata. This is a great place to stash QC stats
+B1.corrected[["percent.mt"]] <- PercentageFeatureSet(B1.corrected, pattern = "^MT-")
+B1.corrected[["percent.rb"]] <- PercentageFeatureSet(B1.corrected, pattern = "^RP[SL]")
+# Get the data frame with the QC information
+metadata <- B1.corrected@meta.data
+
+umi_threshold1 <- 200
+umi_threshold2 <- 20000
+umi_counts <- ggplot(metadata, aes(nCount_RNA)) + geom_histogram(binwidth = 500) + theme_classic() + geom_vline(xintercept = umi_threshold1, color = "red")+ geom_vline(xintercept = umi_threshold2, color = "red")
+umi_counts
+
+feature_threshold1 <- 300
+feature_threshold2 <- 4750
+feature_counts <- ggplot(metadata, aes(nFeature_RNA)) + geom_histogram(binwidth = 50) + theme_classic() + geom_vline(xintercept = feature_threshold1, color = "red") + geom_vline(xintercept = feature_threshold2, color = "red")
+feature_counts
+
+mt_threshold <- 18
+mt_pct <-  ggplot(metadata, aes(percent.mt)) + geom_histogram() + theme_classic() + geom_vline(xintercept = mt_threshold, color = "red")
+mt_pct
+
+rb_threshold <- 42
+rb_pct <-  ggplot(metadata, aes(percent.rb)) + geom_histogram() + theme_classic() + geom_vline(xintercept = rb_threshold, color = "red")
+rb_pct
+
+plot1 <- FeatureScatter(B1.corrected, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot1
+plot2 <- FeatureScatter(filtered_B1corrected, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot2
+
+# Filtering
+filtered_B1corrected <- subset(B1.corrected, nCount_RNA > umi_threshold1 & nCount_RNA < umi_threshold2
+                           & nFeature_RNA > feature_threshold1 & nFeature_RNA < feature_threshold2 &
+                             percent.mt < mt_threshold & percent.rb < rb_threshold)
+table(filtered_B1corrected$orig.ident)
+
+setwd("P:/R/Data")
+saveRDS(filtered_B1corrected, "B1.corrected.rds")
+
+
+B1.corrected <- readRDS("B1.corrected.rds")
+
+# set workplace
+setwd("P:/R/Raw data/min3cell data")
+B2.corrected <- readRDS("B2.corrected.rds")
+B2.corrected
+table(B2.corrected$orig.ident)
+# The [[ operator can add columns to object metadata. This is a great place to stash QC stats
+B2.corrected[["percent.mt"]] <- PercentageFeatureSet(B2.corrected, pattern = "^MT-")
+B2.corrected[["percent.rb"]] <- PercentageFeatureSet(B2.corrected, pattern = "^RP[SL]")
+# Get the data frame with the QC information
+metadata <- B2.corrected@meta.data
+
+umi_threshold1 <- 200
+umi_threshold2 <- 50000
+umi_counts <- ggplot(metadata, aes(nCount_RNA)) + geom_histogram(binwidth = 500) + theme_classic() + geom_vline(xintercept = umi_threshold1, color = "red")+ geom_vline(xintercept = umi_threshold2, color = "red")
+umi_counts
+
+feature_threshold1 <- 200
+feature_threshold2 <- 7000
+feature_counts <- ggplot(metadata, aes(nFeature_RNA)) + geom_histogram(binwidth = 50) + theme_classic() + geom_vline(xintercept = feature_threshold1, color = "red") + geom_vline(xintercept = feature_threshold2, color = "red")
+feature_counts
+
+mt_threshold <- 40
+mt_pct <-  ggplot(metadata, aes(percent.mt)) + geom_histogram() + theme_classic() + geom_vline(xintercept = mt_threshold, color = "red")
+mt_pct
+
+rb_threshold <- 48
+rb_pct <-  ggplot(metadata, aes(percent.rb)) + geom_histogram() + theme_classic() + geom_vline(xintercept = rb_threshold, color = "red")
+rb_pct
+
+plot1 <- FeatureScatter(filtered_B2corrected, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot1
+plot2 <- FeatureScatter(filtered_B2corrected, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot2
+
+# Filtering
+filtered_B2corrected <- subset(B2.corrected, nCount_RNA > umi_threshold1 & nCount_RNA < umi_threshold2
+                               & nFeature_RNA > feature_threshold1 & nFeature_RNA < feature_threshold2 &
+                                 percent.mt < mt_threshold & percent.rb < rb_threshold)
+table(filtered_B2corrected$orig.ident)
+
+setwd("P:/R/Data")
+saveRDS(filtered_B2corrected, "B2.corrected.rds")
+
+
+B2.corrected <- readRDS("B2.corrected.rds")
+
+
+### Loading data
+setwd("P:/R/Data")
+B1.H9 <- readRDS("B1.H9.rds")
+B1.mutated <- readRDS("B1.mutated.rds")
+B2.H9 <- readRDS("B2.H9.rds")
+B2.mutated <- readRDS("B2.mutated.rds")
+Merge.H9<- readRDS ("Merge.H9.rds")
+Merge.mutated<- readRDS ("Merge.mutated.rds")
+
+
+
+Merge.H9 <- merge(B1.H9, y = B2.H9, add.cell.ids = c("B1", "B2"), project = "Merge_ESC_WT")
+saveRDS(Merge.H9, "Merge.H9.rds")
+Merge.mutated <- merge(B1.mutated, y = B2.mutated, add.cell.ids = c("B1", "B2"), project = "Merge_ESC_MU")
+saveRDS(Merge.mutated, "Merge.mutated.rds")
+
+table(Merge.H9$orig.ident)
+
+### Loading data
+setwd("P:/R/Data")
+
+B1.Usher <- readRDS("B1.Usher.rds")
+B1.corrected <- readRDS("B1.corrected.rds")
+B2.Usher <- readRDS("B2.Usher.rds")
+B2.corrected <- readRDS("B2.corrected.rds")
+B1.Usher$orig.ident
+
+Merge.Usher <- merge(B1.Usher, y = B2.Usher, add.cell.ids = c("B1", "B2"), project = "Merge_iPSC_MU")
+saveRDS(Merge.Usher, "Merge.Usher.rds")
+Merge.corrected <- merge(B1.corrected, y = B2.corrected, add.cell.ids = c("B1", "B2"), project = "Merge_iPSC_WT")
+saveRDS(Merge.corrected, "Merge.corrected.rds")
+
+Merge.Usher$corrected <- "hiPSC Usher"
+Merge.corrected$corrected <- "hiPSC corrected"
+
+hiPSC <- merge(B1.Usher, y = c(B1.corrected, B2.Usher, B2.corrected),
+               add.cell.ids = c("B1_iPSC_MU", "B1_iPSC_WT","B2_iPSC_MU", "B2_iPSC_WT" ), project = "iPSC")
+
+Usher <- subset(hiPSC, idents = c("B1_iPSC_MU","B2_iPSC_MU"))
+corrected <- subset(hiPSC, idents = c("B1_iPSC_WT","B2_iPSC_WT"))
+Usher$corrected <- "hiPSC Usher"
+corrected$corrected <- "hiPSC corrected"
+hiPSC <- merge(Usher, y = corrected,add.cell.ids = c("hiPSC Usher", "hiPSC corrected"), project = "iPSC")
+
+hiPSC<-readRDS()
+hiPSC
+table(hiPSC$orig.ident)
+metadata<-hiPSC@assays$RNA@counts
+
+hiPSC<-CreateSeuratObject(counts = metadata, min.cells = 12, project = "hiPSC")
+
+
+saveRDS(Merge.Usher, "Merge.Usher.rds")
+Merge.corrected <- merge(B1.corrected, y = B2.corrected, add.cell.ids = c("B1", "B2"), project = "Merge_iPSC_WT")
+saveRDS(Merge.corrected, "Merge.corrected.rds")
+
+
+
+
+saveRDS(hiPSC,"hiPSC.rds")
+
+table(Merge.corrected$orig.ident)
+Merge.Usher<- readRDS ("Merge.Usher.rds")
+Merge.corrected<- readRDS ("Merge.corrected.rds")
+
+metadata<-hiPSC@assays$RNA@counts
+B1.Usher<-CreateSeuratObject(counts = metadata, min.cells = 3)
+B1.Usher
+
+
+
+
+
+
+
+
